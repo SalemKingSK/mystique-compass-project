@@ -1,5 +1,4 @@
 // src/components/profile-generator/types.ts
-
 // This is the data that the user provides
 export interface AstroInsightInput {
   name: string;
@@ -8,14 +7,14 @@ export interface AstroInsightInput {
   year: number;
   gender: string;
 }
-
 export interface ZodiacData {
   introduction?: string;
   elements?: { [key: string]: string };
   compatibilities?: { [key: string]: string };
-  futures?: { [key: string]: { year: string; element: string; prediction: string } };
+  futures?: {
+    [key: string]: { year: string; element: string; prediction: string };
+  };
 }
-
 // Data for the combined "New Astrology" signs
 export interface AstroInsightOutput {
   name: string;
@@ -35,7 +34,6 @@ export interface AstroInsightOutput {
     profession?: string;
   };
 }
-
 // This is the data returned from the numerology calculation
 export interface ArrowData {
   id: string;
@@ -43,9 +41,8 @@ export interface ArrowData {
   description: string;
   numbers: number[];
   category?: string;
-  type?: 'strength' | 'weakness' | 'shadow';
+  type?: "strength" | "weakness" | "shadow";
 }
-
 export interface PersonalYearData {
   year: number;
   pyn: number;
@@ -70,8 +67,15 @@ export interface PersonalYearData {
   compoundClassicManifestation?: string;
   compoundClassicIsKarmicDebt?: boolean;
   compoundClassicIsMasterNumber?: boolean;
+  // Historical-calibrated dual essence for the Personal Year Wave cards.
+  dualEssenceTitle?: string;
+  dualEssenceSubtitle?: string;
+  dualEssenceSynthesis?: string;
+  dualEssenceIntensity?: number;
+  dualEssencePolarity?: string;
+  predictionFocusAreas?: string[];
+  protectiveActions?: string[];
 }
-
 export interface NumerologyData {
   birthDay: number;
   birthMonth: number;
@@ -104,12 +108,11 @@ export interface NumerologyData {
   arrowsOfWeakness: ArrowData[];
   personalYears?: PersonalYearData[];
 }
-
 export interface FamousPerson {
   name: string;
   day: number;
   month: number;
   year: number;
-  gender: 'male' | 'female' | 'other';
+  gender: "male" | "female" | "other";
   tags: string[];
 }
