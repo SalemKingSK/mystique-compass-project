@@ -1,19 +1,15 @@
 /**
- * AI wrapper — calls the Express /api/ai/transition-advisory endpoint
- * which holds the GEMINI_API_KEY server-side.
+ * AI advisory service intentionally disabled.
+ *
+ * Mystique Compass is a deterministic/offline-first numerology engine. The app
+ * must not depend on chatbots, hosted LLMs, or non-mechanical interpretation
+ * layers. This stub remains only so older imports fail safely instead of making
+ * a network request to a non-existent endpoint.
  */
-export async function generateTransitionAdvisoryAI(prompt: string): Promise<string> {
-  const res = await fetch('/api/ai/transition-advisory', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as any).error || 'AI request failed');
-  }
-
-  const data = await res.json();
-  return data.text;
+export async function generateTransitionAdvisoryAI(
+  _prompt: string,
+): Promise<string> {
+  throw new Error(
+    "AI advisory is disabled: Mystique Compass runs on deterministic code engines only.",
+  );
 }

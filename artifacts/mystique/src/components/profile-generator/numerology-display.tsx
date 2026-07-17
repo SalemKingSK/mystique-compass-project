@@ -37,6 +37,57 @@ import { FateChambers } from "./fate-chambers";
 import { CoreVibrations } from "./core-vibrations";
 import { PinnaclesSection } from "./pinnacles-section";
 import { Button } from "@/components/ui/button";
+
+function parseProbabilityItem(item: string): { label: string; percent: number } | null {
+  const match = item.match(/^(.*?)\s+(\d{1,3})%$/);
+  if (!match) return null;
+  return { label: match[1].trim(), percent: Math.max(0, Math.min(100, Number(match[2]))) };
+}
+
+function PersonalYearProbabilityGraph({ items }: { items?: string[] }) {
+  const rows = (items || []).map(parseProbabilityItem).filter(Boolean) as { label: string; percent: number }[];
+  if (!rows.length) return null;
+  return (
+    <div
+      style={{
+        margin: "0.7rem 0 1rem",
+        padding: "0.85rem",
+        borderRadius: "1rem",
+        background: "linear-gradient(135deg, rgba(15,12,35,0.92), rgba(88,28,135,0.28))",
+        border: "1px solid rgba(167,139,250,0.18)",
+        boxShadow: "0 12px 30px rgba(0,0,0,0.22)",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "'Cinzel',serif",
+          fontSize: "0.62rem",
+          letterSpacing: "0.13em",
+          textTransform: "uppercase",
+          color: "rgba(212,175,55,0.9)",
+          marginBottom: "0.65rem",
+        }}
+      >
+        Personal Year Probability Graph
+      </div>
+      {rows.map((row, index) => {
+        const color = row.percent >= 85 ? "#f1d98a" : row.percent >= 70 ? "#86efac" : row.percent >= 50 ? "#67e8f9" : "#c4b5fd";
+        return (
+          <div key={`${row.label}-${index}`} style={{ marginBottom: index === rows.length - 1 ? 0 : "0.58rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "0.65rem", marginBottom: "0.25rem" }}>
+              <span style={{ color: "rgba(231,221,255,0.86)", fontSize: "0.72rem", lineHeight: 1.25 }}>{row.label}</span>
+              <span style={{ color, fontFamily: "'Cinzel',serif", fontSize: "0.68rem", fontWeight: 800 }}>{row.percent}%</span>
+            </div>
+            <div style={{ height: 9, borderRadius: 999, background: "rgba(8,7,20,0.9)", border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
+              <div style={{ width: `${Math.max(3, row.percent)}%`, height: "100%", borderRadius: 999, background: `linear-gradient(90deg, ${color}, rgba(167,139,250,0.9))`, boxShadow: `0 0 14px ${color}66` }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 function reduceNum(n: number): number {
   let val = Math.abs(n);
@@ -744,7 +795,7 @@ export function NumerologyDisplay({
   } = numerology;
   const [selectedPersonalYear, setSelectedPersonalYear] =
     React.useState<PersonalYearData | null>(null);
-  const [activePyTab, setActivePyTab] = React.useState<number>(4);
+  const [activePyTab, setActivePyTab] = React.useState<number>(0);
   const [personalYearAccordionValue, setPersonalYearAccordionValue] =
     React.useState("");
   const [activeCoreLayer, setActiveCoreLayer] = React.useState<string | null>(
@@ -762,6 +813,7 @@ export function NumerologyDisplay({
   const handleYearSelect = (data: PersonalYearData | null) => {
     if (data?.year !== selectedPersonalYear?.year) {
       setSelectedPersonalYear(data);
+      // Year Theme is the default view; Synthesis remains available as its own tab.
       setActivePyTab(0);
       if (data) {
         setPersonalYearAccordionValue("personal-year-detail");
@@ -1054,6 +1106,7 @@ export function NumerologyDisplay({
                           </span>
                         )}
                       </div>
+                      <PersonalYearProbabilityGraph items={selectedPersonalYear.predictionFocusAreas} />
                       <AccordionContentWithPlayer
                         text={selectedPersonalYear.dualEssenceSynthesis}
                       />

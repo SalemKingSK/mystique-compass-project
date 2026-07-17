@@ -130,6 +130,24 @@ export function ProfileForm({
   };
 
   const handleSubmit = (e: React.FormEvent) => {
+    // Guard against impossible calendar dates (e.g. Feb 30, Apr 31) that the
+    // plain number inputs' min/max attributes alone can't catch, since day
+    // and month are validated independently of each other.
+    const day = Number((formData as any).day);
+    const month = Number((formData as any).month);
+    const year = Number((formData as any).year);
+    if (day && month && year) {
+      const daysInMonth = new Date(year, month, 0).getDate();
+      if (day > daysInMonth) {
+        e.preventDefault();
+        toast({
+          variant: 'destructive',
+          title: 'Invalid Date',
+          description: `${['January','February','March','April','May','June','July','August','September','October','November','December'][month - 1] || 'That month'} only has ${daysInMonth} days — please check the day entered.`,
+        });
+        return;
+      }
+    }
     setBurst(true);
     setTimeout(() => setBurst(false), 900);
     onSubmit(e);

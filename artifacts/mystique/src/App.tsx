@@ -6,7 +6,6 @@ import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
 import { Download, Share } from "lucide-react";
 import { shareApp } from "@/lib/usage-tracker";
-
 function TopInstallBar({
   pwa,
   onInstallClick,
@@ -15,21 +14,25 @@ function TopInstallBar({
   onInstallClick: () => void;
 }) {
   const [dismissed, setDismissed] = useState(() => {
-    try { return localStorage.getItem("mystique-topbar-dismissed") === "1"; } catch { return false; }
+    try {
+      return localStorage.getItem("mystique-topbar-dismissed") === "1";
+    } catch {
+      return false;
+    }
   });
-
   if (pwa.isInstalled || dismissed) return null;
-
   const handleDismiss = () => {
     setDismissed(true);
-    try { localStorage.setItem("mystique-topbar-dismissed", "1"); } catch {}
+    try {
+      localStorage.setItem("mystique-topbar-dismissed", "1");
+    } catch {}
   };
-
   return (
     <div
       style={{
         width: "100%",
-        background: "linear-gradient(135deg, rgba(20,8,50,0.98) 0%, rgba(30,12,65,0.98) 100%)",
+        background:
+          "linear-gradient(135deg, rgba(20,8,50,0.98) 0%, rgba(30,12,65,0.98) 100%)",
         borderBottom: "1px solid rgba(212,175,55,0.3)",
         backdropFilter: "blur(12px)",
         zIndex: 50,
@@ -51,33 +54,36 @@ function TopInstallBar({
           style={{ width: 32, height: 32, borderRadius: 7, flexShrink: 0 }}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{
-            fontFamily: "'Cinzel', serif",
-            fontSize: "0.58rem",
-            letterSpacing: "0.13em",
-            textTransform: "uppercase",
-            color: "#d4af37",
-            margin: 0,
-            lineHeight: 1,
-            marginBottom: "0.15rem",
-          }}>
+          <p
+            style={{
+              fontFamily: "'Cinzel', serif",
+              fontSize: "0.58rem",
+              letterSpacing: "0.13em",
+              textTransform: "uppercase",
+              color: "#d4af37",
+              margin: 0,
+              lineHeight: 1,
+              marginBottom: "0.15rem",
+            }}
+          >
             Mystique Compass
           </p>
-          <p style={{
-            fontSize: "0.67rem",
-            color: "rgba(210,195,250,0.72)",
-            margin: 0,
-            lineHeight: 1.3,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}>
+          <p
+            style={{
+              fontSize: "0.67rem",
+              color: "rgba(210,195,250,0.72)",
+              margin: 0,
+              lineHeight: 1.3,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
             {pwa.isIOS
               ? "Tap Share → Add to Home Screen"
               : "Install for your cosmic experience"}
           </p>
         </div>
-
         <button
           onClick={onInstallClick}
           style={{
@@ -99,14 +105,17 @@ function TopInstallBar({
           }}
           aria-label="Install app"
         >
-          {pwa.isIOS
-            ? <Share size={12} strokeWidth={2.5} />
-            : <Download size={12} strokeWidth={2.5} />}
+          {pwa.isIOS ? (
+            <Share size={12} strokeWidth={2.5} />
+          ) : (
+            <Download size={12} strokeWidth={2.5} />
+          )}
           Install
         </button>
-
         <button
-          onClick={() => { void shareApp(); }}
+          onClick={() => {
+            void shareApp();
+          }}
           style={{
             display: "flex",
             alignItems: "center",
@@ -125,7 +134,6 @@ function TopInstallBar({
         >
           <Share size={12} strokeWidth={2.5} />
         </button>
-
         <button
           onClick={handleDismiss}
           aria-label="Dismiss"
@@ -146,11 +154,9 @@ function TopInstallBar({
     </div>
   );
 }
-
 function App() {
   const pwa = usePwaInstall();
   const [promptOpen, setPromptOpen] = useState(false);
-
   useEffect(() => {
     if (!pwa.isInstalled && !pwa.isDismissed && pwa.isIOS) {
       const timer = setTimeout(() => setPromptOpen(true), 4000);
@@ -158,7 +164,6 @@ function App() {
     }
     return undefined;
   }, [pwa.isInstalled, pwa.isDismissed, pwa.isIOS]);
-
   const handleInstallClick = async () => {
     if (pwa.isIOS) {
       setPromptOpen(true);
@@ -173,13 +178,12 @@ function App() {
     }
     setPromptOpen(true);
   };
-
   return (
     <TooltipProvider>
       <div className="min-h-screen flex flex-col">
         <TopInstallBar pwa={pwa} onInstallClick={handleInstallClick} />
         <div className="flex-1 px-4 py-6 flex flex-col justify-center">
-          <main className="w-full max-w-[420px] mx-auto">
+          <main className="w-full max-w-[980px] mx-auto">
             <ProfileGenerator />
           </main>
         </div>
@@ -193,5 +197,4 @@ function App() {
     </TooltipProvider>
   );
 }
-
 export default App;
