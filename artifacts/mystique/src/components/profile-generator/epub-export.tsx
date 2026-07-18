@@ -23,6 +23,7 @@ import { cheiroPsychicNumbers } from "@/lib/numerology/cheiro-psychic-numbers";
 import { resolveMonthData } from "@/lib/numerology/monthly-profiles";
 import { calculateDynamicPotentials } from "@/lib/numerology/dynamic-engine";
 import { generateDailyForecast } from "@/lib/temporal-prediction-engine-v2";
+import { buildTodayTimingGuidance } from "./engagement-tools";
 interface EpubExportButtonProps {
   insight: AstroInsightOutput;
   numerology: NumerologyData;
@@ -732,6 +733,11 @@ function buildChapter3(
     numerology.birthMonth,
     numerology.birthYear,
   );
+  const todayTimingGuidance = buildTodayTimingGuidance({
+    day: numerology.birthDay,
+    month: numerology.birthMonth,
+    year: numerology.birthYear,
+  });
   const todaySection = section(
     "Today Forecast",
     [
@@ -750,6 +756,15 @@ ${todayExportForecast.shortNarrative}${
 Alert: ${todayExportForecast.notificationAlert}`
           : ""
       }`),
+      `<h3>Cheiro & Johari Timing Keys</h3>`,
+      p(`${todayTimingGuidance.summary}
+Cheiro lucky weekdays: ${todayTimingGuidance.cheiroLuckyDays.join(", ") || "—"}
+Cheiro own dates: ${todayTimingGuidance.cheiroOwnDates.join(", ")}
+Cheiro compatible dates: ${todayTimingGuidance.cheiroCompatibleDates.join(", ")}
+Cheiro strong periods: ${todayTimingGuidance.cheiroStrongPeriods.join("; ") || "—"}
+Johari power weekdays: ${todayTimingGuidance.johariPowerWeekdays.join(", ") || "—"}
+Johari friendly dates: ${todayTimingGuidance.johariFriendlyDates.join(", ") || "—"}
+Johari growth-tension dates: ${todayTimingGuidance.johariGrowthDates.join(", ") || "—"}`),
     ].join(""),
   );
   // Personal Year Analysis (current)
