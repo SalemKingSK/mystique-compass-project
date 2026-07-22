@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>Mystique Compass</title>
+    <!-- Used by the service worker (see public/sw.js) to tell a real app-shell
+         response apart from a same-origin "impostor" page — e.g. Replit's own
+         cold-workspace placeholder, which can be served with a normal 200
+         status from this exact origin and would otherwise look like a
+         perfectly valid fetch. Do not remove. -->
+    <meta name="mystique-app-shell" content="v1" />
     <meta name="description" content="Numerology, psychomatrix &amp; astrology profile generator — giving your life a meaning." />
     <meta name="robots" content="index, follow" />
 

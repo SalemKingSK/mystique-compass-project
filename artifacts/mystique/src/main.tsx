@@ -33,8 +33,12 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js")
-      .catch(() => {});
+    navigator.serviceWorker.register("/sw.js").catch((err) => {
+      // Previously fully silent -- a registration failure (bad scope, MIME
+      // type issue, network hiccup) left zero trace anywhere, making a
+      // "why doesn't offline work" report impossible to diagnose. Logging
+      // it costs nothing and is the only way to ever notice next time.
+      console.error("[sw] registration failed:", err);
+    });
   });
 }

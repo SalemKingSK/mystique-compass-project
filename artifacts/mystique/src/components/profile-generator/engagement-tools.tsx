@@ -36,6 +36,14 @@ import {
 } from "@/lib/numerology/chaldean-pyn-compounds";
 import { NEW_ASTROLOGY_DATA } from "@/lib/new-astrology";
 import { cheiroPsychicNumbers } from "@/lib/numerology/cheiro-psychic-numbers";
+import {
+  buildSoulVitals,
+  generateSoulResonance,
+  getFamousTwins,
+  type SoulResonanceReport,
+  type ResonanceLayer,
+  type DomainScore,
+} from "@/lib/compatibility-engine";
 export type StoredSoul = AstroInsightInput & {
   id?: string;
   timestamp?: number;
@@ -1831,6 +1839,14 @@ export function SoulResonancePanel({ history }: { history: StoredSoul[] }) {
     history[1];
   if (!a || !b || getId(a) === getId(b)) return null;
   const analysis = buildRelationshipAnalysis(a, b);
+  // Not memoized: `a`/`b` are only resolved after the early-return checks
+  // above, so a hook here would violate the Rules of Hooks. The underlying
+  // computation is cheap arithmetic plus a filter over the famous-birthdays
+  // list, so recomputing on each render of this panel is fine.
+  const va = buildSoulVitals(a);
+  const vb = buildSoulVitals(b);
+  const resonance: SoulResonanceReport = generateSoulResonance(va, vb);
+  resonance.famousTwins = getFamousTwins(va, vb);
   return (
     <Panel
       title="Soul Resonance"
@@ -2047,8 +2063,177 @@ export function SoulResonancePanel({ history }: { history: StoredSoul[] }) {
       <StoryCard title="Future Evolution" text={analysis.sections.future} />
       <StoryCard title="Advice" text={analysis.sections.advice} tone="green" />
       <StoryCard title="Final Synthesis" text={analysis.sections.final} />
+      <ExtendedResonanceLayers report={resonance} />
       <EvidenceList evidence={analysis.evidence} />
     </Panel>
+  );
+}
+const ZODIAC_RELATION_LABELS: Record<string, string> = {
+  same: "Same Animal",
+  "secret-friend": "Secret Friends (六合)",
+  trine: "Trine Allies (三合)",
+  "six-clash": "Six Clash (六冲)",
+  "six-harm": "Six Harms (相害)",
+  neutral: "Neutral",
+  unknown: "Unknown",
+};
+function ChineseZodiacCard({ report }: { report: SoulResonanceReport }) {
+  const color = barColor(report.chineseZodiac.score);
+  return (
+    <div
+      style={{
+        padding: "0.72rem",
+        borderRadius: 14,
+        background: "rgba(255,255,255,0.035)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        marginBottom: "0.62rem",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.6rem" }}>
+        <div>
+          <div
+            style={{
+              fontFamily: "'Cinzel',serif",
+              fontSize: "0.66rem",
+              color: "#d4af37",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}
+          >
+            {report.soulA.zodiacAnimal} × {report.soulB.zodiacAnimal}
+          </div>
+          <div style={{ fontSize: "0.62rem", color: "rgba(200,180,240,0.58)", marginTop: 2 }}>
+            {ZODIAC_RELATION_LABELS[report.chineseZodiac.relation] || report.chineseZodiac.relation}
+          </div>
+        </div>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: "1.1rem", fontWeight: 800, color }}>
+          {report.chineseZodiac.score}
+        </div>
+      </div>
+      <p style={{ fontSize: "0.72rem", color: "rgba(231,221,255,0.78)", marginTop: "0.5rem", lineHeight: 1.6 }}>
+        {report.chineseZodiac.note}
+      </p>
+    </div>
+  );
+}
+function LayerWeights({ weights }: { weights: DomainScore }) {
+  return (
+    <span style={{ display: "inline-flex", gap: "0.55rem", flexWrap: "wrap" }}>
+      <span style={{ color: "rgba(251,113,133,0.8)", fontSize: "0.6rem" }}>♥ {weights.romance}%</span>
+      <span style={{ color: "rgba(241,217,138,0.8)", fontSize: "0.6rem" }}>⚒ {weights.partnership}%</span>
+      <span style={{ color: "rgba(103,232,249,0.8)", fontSize: "0.6rem" }}>☺ {weights.friendship}%</span>
+    </span>
+  );
+}
+function ResonanceLayerDetails({ layers }: { layers: ResonanceLayer[] }) {
+  return (
+    <details style={{ marginBottom: "0.7rem" }}>
+      <summary
+        style={{
+          cursor: "pointer",
+          color: "#d4af37",
+          fontFamily: "'Cinzel',serif",
+          fontSize: "0.62rem",
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+        }}
+      >
+        Resonance Layers ({layers.length})
+      </summary>
+      <div style={{ display: "grid", gap: "0.55rem", marginTop: "0.7rem" }}>
+        {layers.map((layer) => (
+          <div
+            key={layer.label}
+            style={{
+              padding: "0.65rem",
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.035)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "rgba(231,221,255,0.82)",
+              fontSize: "0.72rem",
+              lineHeight: 1.55,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "0.4rem",
+              }}
+            >
+              <b style={{ color: barColor(layer.score) }}>
+                {layer.label} — {layer.score}
+              </b>
+              <LayerWeights weights={layer.domainWeights} />
+            </div>
+            <div style={{ marginTop: "0.35rem" }}>{layer.detail}</div>
+            <div
+              style={{
+                marginTop: "0.3rem",
+                opacity: 0.55,
+                fontSize: "0.6rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              {layer.verdict}
+            </div>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+function ExtendedResonanceLayers({ report }: { report: SoulResonanceReport }) {
+  const psycho = report.psychomatrixComparison;
+  return (
+    <div style={{ margin: "0.9rem 0" }}>
+      <div
+        style={{
+          fontFamily: "'Cinzel',serif",
+          color: "#d4af37",
+          fontSize: "0.62rem",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          marginBottom: "0.55rem",
+        }}
+      >
+        Domain Resonance
+      </div>
+      <div
+        style={{
+          padding: "0.72rem",
+          borderRadius: 14,
+          background: "rgba(255,255,255,0.035)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          marginBottom: "0.7rem",
+        }}
+      >
+        <ScoreBar label="Romance" score={report.domains.romance} />
+        <ScoreBar label="Partnership / Business" score={report.domains.partnership} />
+        <ScoreBar label="Friendship" score={report.domains.friendship} />
+      </div>
+      <ResonanceLayerDetails layers={report.layers} />
+      <ChineseZodiacCard report={report} />
+      <StoryCard
+        title="Lo Shu Karmic Overlay"
+        text={`${report.loShuOverlay.voidFill.narrative} ${report.loShuOverlay.amplification.narrative}`}
+        tone="violet"
+      />
+      <StoryCard
+        title="Alexandrov Psychomatrix Comparison"
+        text={[psycho.willpower, psycho.energy, psycho.stability, psycho.purpose, psycho.family, psycho.habits].join(" ")}
+      />
+      {report.famousTwins.length > 0 && (
+        <StoryCard
+          title="Cosmic Twins"
+          text={report.famousTwins.map((t) => `${t.name} — ${t.sharedTrait}`).join(" · ")}
+          tone="green"
+        />
+      )}
+    </div>
   );
 }
 function StoryCard({
