@@ -11,28 +11,45 @@ import {
 import { getActiveArrows } from './arrow-analysis';
 
 // --- HELPER FUNCTIONS ---
-const reduceToSingleDigit = (n: number): number => {
-  if (n <= 9) return n;
-  const sum = String(n).split('').reduce((acc, digit) => acc + parseInt(digit, 10), 0);
-  return reduceToSingleDigit(sum);
+// Sums only the actual digit characters (0-9) of a value, ignoring signs,
+// decimals, or any other non-digit characters (e.g. the "-" in a BCE year
+// like -551, or letters from a stray "NaN"/"Infinity"). This guarantees the
+// result is always a finite, non-negative number, so callers below can never
+// feed something back into themselves that fails to shrink.
+const digitSum = (value: number): number => {
+  if (!Number.isFinite(value)) return 0;
+  return String(Math.trunc(Math.abs(value)))
+    .split('')
+    .reduce((acc, ch) => {
+      const d = ch.charCodeAt(0) - 48; // '0' === 48
+      return d >= 0 && d <= 9 ? acc + d : acc;
+    }, 0);
 };
 
-const reduceOnce = (n: number): number => {
-    return String(n).split('').reduce((acc, digit) => acc + parseInt(digit, 10), 0);
-}
+// Iterative (not recursive) so a bad input can never overflow the call stack -
+// it just loops until it reaches a single digit or a safety cap is hit.
+const reduceToSingleDigit = (n: number): number => {
+  let value = digitSum(n);
+  let guard = 0;
+  while (value > 9 && guard < 1000) {
+    value = digitSum(value);
+    guard++;
+  }
+  return value;
+};
+
+const reduceOnce = (n: number): number => digitSum(n);
 
 // --- CORE NUMBER CALCULATIONS ---
 export const calculatePsyche = (day: number): number => {
     if (day > 9) {
-         const sum = String(day).split('').reduce((acc, digit) => acc + parseInt(digit, 10), 0);
-         return reduceToSingleDigit(sum);
+         return reduceToSingleDigit(digitSum(day));
     }
     return day;
 };
 
 export const calculateDestiny = (day: number, month: number, year: number): number => {
-  const fullDateStr = String(day) + String(month) + String(year);
-  const sum = fullDateStr.split('').reduce((acc, digit) => acc + parseInt(digit, 10), 0);
+  const sum = digitSum(day) + digitSum(month) + digitSum(year);
   return reduceToSingleDigit(sum);
 };
 
@@ -47,9 +64,9 @@ export const calculateKua = (year: number, month: number, day: number, gender: s
   }
 
   const lastTwoDigits = adjustedYear % 100;
-  let yearRoot = String(lastTwoDigits).split('').reduce((a, d) => a + parseInt(d, 10), 0);
+  let yearRoot = digitSum(lastTwoDigits);
   while (yearRoot > 9) {
-    yearRoot = String(yearRoot).split('').reduce((a, d) => a + parseInt(d, 10), 0);
+    yearRoot = digitSum(yearRoot);
   }
 
   let kua = 0;
@@ -62,7 +79,7 @@ export const calculateKua = (year: number, month: number, day: number, gender: s
   } else {
     kua = isPost2000 ? (6 + yearRoot) : (5 + yearRoot);
     while (kua > 9) {
-      kua = String(kua).split('').reduce((a, d) => a + parseInt(d, 10), 0);
+      kua = digitSum(kua);
     }
     if (kua === 5) kua = 8;
   }
@@ -128,9 +145,7 @@ export const generateLoShuData = (input: AstroInsightInput): NumerologyData => {
   // Layer 2: Main Compound Number digits only
   // Sum of all date digits. If 2-digit result, add each digit separately.
   // If 1-digit result, add it once.
-  const birthDateSum = String(day).split('').reduce((a, b) => a + Number(b), 0) +
-                       String(month).split('').reduce((a, b) => a + Number(b), 0) +
-                       String(year).split('').reduce((a, b) => a + Number(b), 0);
+  const birthDateSum = digitSum(day) + digitSum(month) + digitSum(year);
   const compoundDigitsForGrid = birthDateSum >= 10
     ? String(birthDateSum).split('').map(Number).filter(d => d !== 0)
     : birthDateSum > 0 ? [birthDateSum] : [];
@@ -170,7 +185,7 @@ export const generateLoShuData = (input: AstroInsightInput): NumerologyData => {
   }
 
   const rawKarmicSum = day + month + year;
-  const karmicCandidate = String(rawKarmicSum).split('').reduce((a, b) => a + Number(b), 0);
+  const karmicCandidate = digitSum(rawKarmicSum);
   const karmicFateNum = (karmicCandidate >= 10 && lindaGoodmanMeanings[karmicCandidate]) ? karmicCandidate : null;
   const karmicFateMeaning = karmicFateNum ? lindaGoodmanMeanings[karmicFateNum] : null;
 
@@ -200,8 +215,8 @@ export const generateLoShuData = (input: AstroInsightInput): NumerologyData => {
     }));
 
   let kuaLookupKey = String(kuaNum);
-  if (kuaNum === 2 && gender.toLowerCase() === 'male' && String(year).split('').reduce((a, b) => a + Number(b), 0) % 9 === 5) kuaLookupKey = '5_male';
-  else if (kuaNum === 8 && gender.toLowerCase() === 'female' && String(year).split('').reduce((a, b) => a + Number(b), 0) % 9 === 5) kuaLookupKey = '5_female';
+  if (kuaNum === 2 && gender.toLowerCase() === 'male' && digitSum(year) % 9 === 5) kuaLookupKey = '5_male';
+  else if (kuaNum === 8 && gender.toLowerCase() === 'female' && digitSum(year) % 9 === 5) kuaLookupKey = '5_female';
   const kuaAttributes = KUA_DATA[kuaLookupKey] || {};
   const psychicMeaning = PSYCHIC_NUMBER_MEANINGS[psycheNum as keyof typeof PSYCHIC_NUMBER_MEANINGS] || { title: 'Unknown', description: 'No meaning available.'};
   const destinyMeaning = DESTINY_NUMBER_MEANINGS[destinyNum as keyof typeof DESTINY_NUMBER_MEANINGS] || { title: 'Unknown', description: 'No meaning available.'};
