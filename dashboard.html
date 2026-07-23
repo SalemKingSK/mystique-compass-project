@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mystique Compass — Analytics</title>
+<meta name="robots" content="noindex, nofollow" />
+<style>
+  :root {
+    --bg: #0e0a1a;
+    --panel: #1a1330;
+    --border: #3a2d5c;
+    --gold: #f1d98a;
+    --violet: #c4b5fd;
+    --text: rgba(231,221,255,0.92);
+    --text-dim: rgba(231,221,255,0.55);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: radial-gradient(ellipse at top, #1e1638 0%, var(--bg) 60%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+  }
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.05em;
+    color: var(--gold);
+    text-align: center;
+    margin: 0 0 0.25rem;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin-bottom: 1.5rem;
+  }
+  .container { max-width: 720px; margin: 0 auto; }
+  .setup-card, .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .setup-card label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 0.3rem;
+    margin-top: 0.75rem;
+  }
+  .setup-card input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #120c22;
+    color: var(--text);
+    font-size: 0.85rem;
+  }
+  button {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0.65rem;
+    border-radius: 10px;
+    border: none;
+    background: var(--gold);
+    color: #1a1330;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  button.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: auto;
+    padding: 0.4rem 0.9rem;
+    font-weight: 500;
+    margin-top: 0;
+  }
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.75rem;
+  }
+  .stat-box {
+    text-align: center;
+    padding: 0.9rem 0.5rem;
+    border-radius: 12px;
+    background: rgba(196,181,253,0.06);
+    border: 1px solid var(--border);
+  }
+  .stat-box .num {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .stat-box .label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    margin-top: 0.2rem;
+  }
+  .panel h2 {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--violet);
+    margin: 0 0 0.75rem;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.78rem;
+  }
+  .bar-row .bar-label { width: 70px; flex-shrink: 0; color: var(--text-dim); }
+  .bar-row .bar-track {
+    flex: 1;
+    height: 8px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bar-row .bar-fill { height: 100%; background: var(--gold); border-radius: 4px; }
+  .bar-row .bar-count { width: 34px; text-align: right; color: var(--text-dim); }
+  .error { color: #fb7185; font-size: 0.8rem; text-align: center; margin-top: 1rem; }
+  .loading { text-align: center; color: var(--text-dim); font-size: 0.85rem; padding: 2rem 0; }
+  .meta-note { font-size: 0.68rem; color: var(--text-dim); text-align: center; margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Mystique Compass</h1>
+  <div class="subtitle">Anonymous usage dashboard — no personal data collected</div>
+
+  <div id="setup" class="setup-card" style="display:none;">
+    <label for="workerUrl">Analytics Worker URL</label>
+    <input id="workerUrl" placeholder="https://mystique-analytics.your-name.workers.dev" />
+    <label for="adminKey">Admin Key</label>
+    <input id="adminKey" type="password" placeholder="the key from wrangler secret put ADMIN_KEY" />
+    <button onclick="saveConfig()">Connect</button>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <div class="top-bar">
+      <button class="secondary" onclick="refresh()">↻ Refresh</button>
+      <button class="secondary" onclick="resetConfig()">Change settings</button>
+    </div>
+
+    <div id="loading" class="loading">Loading…</div>
+    <div id="error" class="error" style="display:none;"></div>
+
+    <div id="stats-content" style="display:none;">
+      <div class="panel">
+        <div class="stat-grid">
+          <div class="stat-box"><div class="num" id="s-installs">–</div><div class="label">Installs</div></div>
+          <div class="stat-box"><div class="num" id="s-sessions">–</div><div class="label">Sessions</div></div>
+          <div class="stat-box"><div class="num" id="s-shares">–</div><div class="label">Shares</div></div>
+          <div class="stat-box"><div class="num" id="s-devices">–</div><div class="label">Unique Devices</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>By Country</h2>
+        <div id="country-bars"></div>
+      </div>
+
+      <div class="panel">
+        <h2>By Day (recent)</h2>
+        <div id="day-bars"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Share Method</h2>
+        <div id="share-bars"></div>
+      </div>
+
+      <div class="meta-note" id="meta-note"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CONFIG_KEY = 'mystique-analytics-dashboard-config';
+
+  function getConfig() {
+    try {
+      const raw = localStorage.getItem(CONFIG_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+
+  function saveConfig() {
+    const workerUrl = document.getElementById('workerUrl').value.trim().replace(/\/$/, '');
+    const adminKey = document.getElementById('adminKey').value.trim();
+    if (!workerUrl || !adminKey) { alert('Both fields are required.'); return; }
+    localStorage.setItem(CONFIG_KEY, JSON.stringify({ workerUrl, adminKey }));
+    init();
+  }
+
+  function resetConfig() {
+    localStorage.removeItem(CONFIG_KEY);
+    init();
+  }
+
+  function renderBars(containerId, dataObj, sortByKey) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    const entries = Object.entries(dataObj || {});
+    if (entries.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-dim);font-size:0.8rem;">No data yet.</div>';
+      return;
+    }
+    entries.sort((a, b) => sortByKey ? a[0].localeCompare(b[0]) : b[1] - a[1]);
+    const max = Math.max(...entries.map(e => e[1]), 1);
+    for (const [label, count] of entries) {
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML = `
+        <div class="bar-label">${label}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(count / max) * 100}%"></div></div>
+        <div class="bar-count">${count}</div>
+      `;
+      container.appendChild(row);
+    }
+  }
+
+  async function refresh() {
+    const config = getConfig();
+    if (!config) return;
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('error').style.display = 'none';
+    document.getElementById('stats-content').style.display = 'none';
+
+    try {
+      const res = await fetch(`${config.workerUrl}/stats?key=${encodeURIComponent(config.adminKey)}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      const stats = await res.json();
+
+      document.getElementById('s-installs').textContent = stats.totalInstalls ?? 0;
+      document.getElementById('s-sessions').textContent = stats.totalSessions ?? 0;
+      document.getElementById('s-shares').textContent = stats.totalShares ?? 0;
+      document.getElementById('s-devices').textContent = stats.uniqueDevices ?? 0;
+
+      renderBars('country-bars', stats.byCountry, false);
+      renderBars('day-bars', stats.byDay, true);
+      renderBars('share-bars', stats.shareMethodCounts, false);
+
+      document.getElementById('meta-note').textContent =
+        `Scanned ${stats.recordsScanned} of ${stats.totalRawKeysStored} stored batches · generated ${new Date(stats.generatedAt).toLocaleString()}`;
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('stats-content').style.display = 'block';
+    } catch (err) {
+      document.getElementById('loading').style.display = 'none';
+      const errEl = document.getElementById('error');
+      errEl.textContent = `Couldn't load stats: ${err.message}`;
+      errEl.style.display = 'block';
+    }
+  }
+
+  function init() {
+    const config = getConfig();
+    if (!config) {
+      document.getElementById('setup').style.display = 'block';
+      document.getElementById('dashboard').style.display = 'none';
+    } else {
+      document.getElementById('setup').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      refresh();
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
