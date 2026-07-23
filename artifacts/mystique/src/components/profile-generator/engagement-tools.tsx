@@ -29,7 +29,6 @@ import {
   computePersonalYearNumber,
   reduceNum,
 } from "@/lib/numerology/personal-year-full";
-import { famousBirthdays } from "@/lib/famous-birthdays";
 import {
   getCompoundForPYN,
   getClassicCompoundForPYN,
@@ -40,9 +39,13 @@ import {
   buildSoulVitals,
   generateSoulResonance,
   getFamousTwins,
+  getFamousSoulBank,
+  getFamousSoulWeather,
+  getCosmicTwinsForSoul,
   type SoulResonanceReport,
   type ResonanceLayer,
   type DomainScore,
+  type FamousSoulVitals,
 } from "@/lib/compatibility-engine";
 export type StoredSoul = AstroInsightInput & {
   id?: string;
@@ -837,11 +840,42 @@ export function TodaySurface({
           </div>
         </Panel>
       )}
+      {primarySoul && <FamousPersonalYearMirrors soul={primarySoul} />}
       {history.length > 0 && (
         <SoulWeatherDashboard history={history} onLoad={onLoad} />
       )}
-      {history.length >= 2 && <SoulResonancePanel history={history} />}
+      {history.length >= 1 && <SoulResonancePanel history={history} />}
     </>
+  );
+}
+ 
+function FamousPersonalYearMirrors({ soul }: { soul: StoredSoul }) {
+  const targetYear = new Date().getFullYear();
+  const mirrors = React.useMemo(() => getFamousSoulWeather(soul, targetYear, 8), [soul, targetYear]);
+  if (!mirrors.length) return null;
+  return (
+    <Panel
+      title="Famous Personal-Year Mirrors"
+      subtitle={`Famous-birthday bank · ${targetYear} · same current personal-year weather`}
+      icon={<Star size={18} />}
+    >
+      <div style={{ display: "grid", gap: "0.55rem" }}>
+        {mirrors.map((m) => (
+          <div key={m.soul.id} style={{ padding: "0.65rem 0.7rem", borderRadius: 13, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "0.6rem" }}>
+              <b style={{ color: "rgba(248,250,252,0.92)", fontSize: "0.82rem" }}>{m.soul.name}</b>
+              <span style={{ color: "#d4af37", fontFamily: "'Cinzel',serif", fontSize: "0.62rem" }}>{m.score}%</span>
+            </div>
+            <div style={{ color: "rgba(200,180,240,0.55)", fontSize: "0.64rem", marginTop: 3 }}>
+              {m.directName} · Classic {m.classicName}
+            </div>
+            <div style={{ color: "rgba(231,221,255,0.72)", fontSize: "0.68rem", lineHeight: 1.55, marginTop: 4 }}>
+              {m.reasons.join(" · ")}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Panel>
   );
 }
 function MiniStat({ label, value }: { label: string; value: React.ReactNode }) {
@@ -1818,25 +1852,18 @@ function EvidenceList({ evidence }: { evidence: ResonanceEvidence[] }) {
   );
 }
 export function SoulResonancePanel({ history }: { history: StoredSoul[] }) {
-  const [aId, setAId] = React.useState(
-    history[0]?.id || `${history[0]?.name}-${history[0]?.day}`,
-  );
-  const [bId, setBId] = React.useState(
-    history[1]?.id || `${history[1]?.name}-${history[1]?.day}`,
-  );
+  const famousBank = React.useMemo(() => getFamousSoulBank(), []);
+  const getId = React.useCallback((s: StoredSoul | FamousSoulVitals) => s.id || `${s.name}-${s.day}-${s.month}-${s.year}`, []);
+  const options = React.useMemo(() => [...history, ...famousBank], [history, famousBank]);
+  const [aId, setAId] = React.useState(history[0]?.id || `${history[0]?.name}-${history[0]?.day}`);
+  const [bId, setBId] = React.useState(history[1]?.id || `${history[1]?.name}-${history[1]?.day}` || famousBank[0]?.id || "");
   React.useEffect(() => {
-    if (history[0])
-      setAId(history[0].id || `${history[0].name}-${history[0].day}`);
-    if (history[1])
-      setBId(history[1].id || `${history[1].name}-${history[1].day}`);
-  }, [history.length]);
-  const getId = (s: StoredSoul) =>
-    s.id || `${s.name}-${s.day}-${s.month}-${s.year}`;
-  const a = history.find((s) => getId(s) === aId) || history[0];
-  const b =
-    history.find((s) => getId(s) === bId) ||
-    history.find((s) => getId(s) !== getId(a)) ||
-    history[1];
+    if (history[0]) setAId(getId(history[0]));
+    if (history[1]) setBId(getId(history[1]));
+    else if (famousBank[0]) setBId(famousBank[0].id);
+  }, [history.length, famousBank, getId]);
+  const a = options.find((s) => getId(s) === aId) || history[0] || famousBank[0];
+  const b = options.find((s) => getId(s) === bId) || options.find((s) => getId(s) !== getId(a));
   if (!a || !b || getId(a) === getId(b)) return null;
   const analysis = buildRelationshipAnalysis(a, b);
   // Not memoized: `a`/`b` are only resolved after the early-return checks
@@ -1866,22 +1893,40 @@ export function SoulResonancePanel({ history }: { history: StoredSoul[] }) {
           onChange={(e) => setAId(e.target.value)}
           style={selectStyle}
         >
-          {history.map((s) => (
-            <option key={getId(s)} value={getId(s)}>
-              {s.name}
-            </option>
-          ))}
+          <optgroup label="Saved Souls">
+            {history.map((s) => (
+              <option key={getId(s)} value={getId(s)}>
+                {s.name}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Famous People Database">
+            {famousBank.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </optgroup>
         </select>
         <select
           value={bId}
           onChange={(e) => setBId(e.target.value)}
           style={selectStyle}
         >
-          {history.map((s) => (
-            <option key={getId(s)} value={getId(s)}>
-              {s.name}
-            </option>
-          ))}
+          <optgroup label="Saved Souls">
+            {history.map((s) => (
+              <option key={getId(s)} value={getId(s)}>
+                {s.name}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Famous People Database">
+            {famousBank.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </optgroup>
         </select>
       </div>
       <div
@@ -2331,49 +2376,19 @@ export function CosmicTwinsPanel({
   insight: AstroInsightOutput;
   numerology: NumerologyData;
 }) {
-  const currentLife = lifePath({
-    day: numerology.birthDay,
-    month: numerology.birthMonth,
-    year: numerology.birthYear,
-  });
-  const animal = zodiacAnimal(numerology.birthYear);
-  const matches = famousBirthdays
-    .map((p) => {
-      let score = 0;
-      const reasons: string[] = [];
-      if (p.day === numerology.birthDay && p.month === numerology.birthMonth) {
-        score += 55;
-        reasons.push("same birthday");
-      }
-      const lp = lifePath({ day: p.day, month: p.month, year: p.year });
-      if (lp === currentLife) {
-        score += 20;
-        reasons.push(`same life path ${lp}`);
-      }
-      if (zodiacAnimal(p.year) === animal) {
-        score += 15;
-        reasons.push(`same Chinese animal ${animal}`);
-      }
-      if (p.month === numerology.birthMonth) {
-        score += 5;
-        reasons.push("same birth month");
-      }
-      return { ...p, score, reasons };
-    })
-    .filter((p) => p.score >= 20 && p.name !== insight.name)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 8);
+  const soul = React.useMemo(() => buildSoulVitals({ name: insight.name, day: numerology.birthDay, month: numerology.birthMonth, year: numerology.birthYear, gender: insight.gender || "male" }), [insight.name, insight.gender, numerology.birthDay, numerology.birthMonth, numerology.birthYear]);
+  const matches = React.useMemo(() => getCosmicTwinsForSoul(soul, 10), [soul]);
   if (!matches.length) return null;
   return (
     <Panel
       title="Cosmic Twins"
-      subtitle="Famous lives sharing birthday, life-path or zodiac resonance"
+      subtitle="Famous-birthday database: birthday, psychic, destiny, life-path and zodiac resonance"
       icon={<Star size={18} />}
     >
       <div style={{ display: "grid", gap: "0.55rem" }}>
         {matches.map((m) => (
           <div
-            key={`${m.name}-${m.year}`}
+            key={`${m.name}-${m.born}`}
             style={{
               padding: "0.65rem 0.7rem",
               borderRadius: 13,
@@ -2410,7 +2425,7 @@ export function CosmicTwinsPanel({
                 marginTop: 2,
               }}
             >
-              Born {m.day}/{m.month}/{m.year} · {m.reasons.join(" · ")}
+              Born {m.born} · {m.sharedTrait}
             </div>
           </div>
         ))}
